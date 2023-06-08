@@ -65,6 +65,7 @@ class GuardiansTree{
             file.close();
         }
 
+        /*
         //cargar archivo villas
         void loadVillagesFromFile(const string& filename){
             ifstream file(filename);//abre el archivo y lo llama file 
@@ -86,6 +87,7 @@ class GuardiansTree{
             }
             file.close();
         }
+        */
     private:
         vector<Guardian*> guardians;
         Guardian* root;
