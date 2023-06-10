@@ -100,7 +100,7 @@ class GuardiansTree{
 
         //coneccion villas
         void coneccionVillages(string village, string coneccionVillages){
-            int indiceInicial;
+            int indiceInicial = 0;
             int indiceConeccion;
             for (const auto& pair : MapVillages) {
                 const string& villageName = pair.first;
@@ -147,6 +147,16 @@ class GuardiansTree{
             }
             return false;
         }
+        int buscarIndice(string village){
+            for (const auto& pair : MapVillages) {
+                    const string& villageName = pair.first;
+                    const int& villageIndice = pair.second;
+                    if(village == villageName){
+                        return villageIndice;
+                    }
+            }
+            return -1;
+        }
         string buscarPorIndice(int indice){
             for (const auto& pair : MapVillages) {
                     const string& villageName = pair.first;
@@ -169,6 +179,15 @@ class GuardiansTree{
                 cout<<villageNameAux << endl;
                 for(int k= 0; k < MapVillages.size(); k++){
                     if(matrizVillage[i][k] == 1){
+                        cout << "    >> " << buscarPorIndice(k)<<endl;
+                    }
+                }
+        }
+        void printVillagesVecinas(string village){
+            int indice = buscarIndice(village);
+            cout<<"Desde " << village <<" puedes ir a:"<< endl;
+                for(int k= 0; k < MapVillages.size(); k++){
+                    if(matrizVillage[indice][k] == 1){
                         cout << "    >> " << buscarPorIndice(k)<<endl;
                     }
                 }
@@ -213,89 +232,150 @@ void cls() {
         system("clear"); // Comando para limpiar la pantalla en sistemas Unix/Linux
     #endif
 }
-std::string capitalizeFirstLetter(const std::string& str) {
-    std::string result = str;
+std::string capitalizeFirstLetter(const std::string& input) {
+    std::string result = input;
 
     if (!result.empty()) {
+        // Convertir la primera letra a mayúscula
         result[0] = std::toupper(result[0]);
-    }
 
+        // Convertir las demás letras a minúsculas
+        for (size_t i = 1; i < result.length(); i++) {
+            result[i] = std::tolower(result[i]);
+        }
+    }
     return result;
 }
-
-
+bool esEntero(const std::string& str) {
+    try {
+        // Intenta convertir el string a un entero
+        int numero = std::stoi(str);
+        return true;
+    } catch (const std::exception& e) {
+        // Ocurrió una excepción, lo cual significa que el string no es un entero válido
+        return false;
+    }
+}
+void printBorde(string str){
+    cout << "            |===================================|            "<<endl;
+    cout << "|===========|"<< str <<"|===========|"<<endl;
+    cout << "            |===================================|            "<<endl<<endl;
+}
+string convertVillageString(string village){
+    //funcion para concertir a entrada de valle en un string valido
+    string resultVillage;
+    if(capitalizeFirstLetter(village) == "Tesla"){
+        return capitalizeFirstLetter(village);
+    }else if(capitalizeFirstLetter(village) == "Capital"){
+        resultVillage = capitalizeFirstLetter(village) + " City";
+        return resultVillage;
+    }else if(capitalizeFirstLetter(village) == "Capital City"){
+        return village;
+    }else{
+        resultVillage = capitalizeFirstLetter(village) + " Village";
+        return resultVillage;
+    }
+}
 /*FUNCIONES DE JUEGO*/
 Guardian elegirPersonaje(){
     /*Implementar despues*/
     Guardian player;
     return player;
 }
-Guardian crearPersonaje(){
-    Guardian player;
-    GuardiansTree tree;
-    tree.loarGuardianFromFile("guardians.txt");
-    tree.loadVillagesFromFile("villages.txt");
-    string name, mainMaster, village;
-    int powerLevel = 50;
-    int  valor = 0;
-    while(valor < 3){
-        cout << "            ╔═══════════════════════════════════╗            "<<endl;
-        cout << "║═══════════║       CREACION DE PERSONAJE       ║═══════════║"<<endl;
-        cout << "            ╚═══════════════════════════════════╝            "<<endl<<endl;
-        if(valor == 0){
-            cout <<"Ingrese un nommbre: ";
-            cin >> name;
-            if(!name.empty()){
-                valor++;
-            }
-            cls();        
-        }else if(valor == 1){
-            cout << "A continuacion se mostrara una lista de maestros" <<endl;
-            cout << "Deberá escoger entre los maestros presentes para que sea su maestro" <<endl;
-            cout << "Debe tener en cuanta que un maestro debe tener mayor nivel que usted" <<endl;
-            cout << "Nivel actual de su personaje: 50" <<endl;
-            std::cin.ignore();
-            pause("Presione una tecla para continuar...");
-            cls();
-            
-            tree.printGuardians();
-            cout << endl << "Ingrese en nombre del maestro ecogido: ";
-            cin >> mainMaster;
-            //buscar maestro
-            Guardian* mainMasterGuardian = tree.findGuardian(capitalizeFirstLetter(mainMaster));
-            if(mainMasterGuardian != nullptr){
-                if(mainMasterGuardian->powerLevel > powerLevel){
-                    valor++;
-                }else{
-                    pause("El maestro singresado no cumple con los requisitos, intetalo nuevamente...");
-                }
-            }else{
-                pause("El maestro ingresado no cumple con los requisitos, intetalo nuevamente...");
-            }
-        }else if(valor == 2){
-            cout << "A continuacion se mostrara una lista de las villas disponibles" <<endl;
-            cout << "Deberá escoger entre las villas disponibles" <<endl;
-            cout << "Esta será la villa donde iniciara su viaje" <<endl;
-            std::cin.ignore();
-            pause("Presione una tecla para continuar...");
-            cls();
-
-            tree.printMap();
-            cout << endl<< "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
-            cout << endl << "Ingrese en nombre de la villa escogida: ";
-            cin >> village;
-            if(tree.buscarPorName(capitalizeFirstLetter(village))+ "Village"){
-                valor++;
-            }
-        }
+bool crearNombre(string* name){
+    printBorde("       CREACION DE PERSONAJE       ");
+    std::cout <<"Ingrese un nommbre: ";
+    cin >> *name;
+    if(!name->empty()){
+        cls();
+        return false;
     }
+    return true;
+    cls(); 
+}
+bool crearMaestro(Guardian* mainMasterGuardian, string* mainMaster, int powerLevel, GuardiansTree* tree){
+    printBorde("       CREACION DE PERSONAJE       ");
+    cout << "A continuacion se mostrara una lista de maestros" <<endl;
+    cout << "Deberá escoger entre los maestros presentes para que sea su maestro" <<endl;
+    cout << "Debe tener en cuanta que un maestro debe tener mayor nivel que usted" <<endl;
+    cout << "Nivel actual de su personaje: 50" <<endl;
+    std::cin.ignore();
+    pause("Presione una tecla para continuar...");
+    
+    cout<<endl << "MAESTROS DISPONIBLES: "<<endl;
+    tree->printGuardians();
+    cout << endl << "Ingrese en nombre del maestro ecogido: ";
+    cin >> *mainMaster;
+    //buscar maestro
+    mainMasterGuardian = tree->findGuardian(capitalizeFirstLetter(*mainMaster));
+    if(mainMasterGuardian != nullptr){
+        if(mainMasterGuardian->powerLevel > powerLevel){
+            cls();
+            return false;
+        }else{
+            std::cin.ignore();
+            pause("El maestro singresado no cumple con los requisitos, intetalo nuevamente...");
+            cls();
+        }
+    }else{
+        std::cin.ignore();
+        pause("El maestro ingresado no cumple con los requisitos, intetalo nuevamente...");
+        cls();
+    }
+    cls();
+    return true;
+}
+bool crearVilla(string village, string* villageNameComplete, GuardiansTree* tree){
+    printBorde("       CREACION DE PERSONAJE       ");
+    cout << "A continuacion se mostrara una lista de las villas disponibles" <<endl;
+    cout << "Deberá escoger entre las villas disponibles" <<endl;
+    cout << "Esta será la villa donde iniciara su viaje" <<endl;
+    std::cin.ignore();
+    pause("Presione una tecla para continuar...");
+    
+    cout<<endl << "VILLAS DISPONIBLES: "<<endl;
+    tree->printMap();
+    cout << endl<< "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
+    cout << endl << "Ingrese en nombre de la villa escogida: ";
+    cin >> village;
+    *villageNameComplete = convertVillageString(village); 
+    if(tree->buscarPorName(*villageNameComplete)){
+        return false;
+        //break;
+    }else{
+        std::cin.ignore();
+        pause("La villa ingresada no cumple con los requisitos, intetalo nuevamente..."); 
+        cls();
+    }
+    return true;
+    cls();
+}
+Guardian crearPersonaje(GuardiansTree* tree){
+    Guardian player;
+    Guardian mainMasterGuardian;
+    string name, mainMaster, village, villageNameComplete;
+    int powerLevel = 50;
+    bool  valor = true;
+    //name
+    while(valor){
+        valor = crearNombre(&name);
+    }
+    valor = true;
+    while(valor){
+        valor = crearMaestro(&mainMasterGuardian, &mainMaster, powerLevel, tree);
+    }         
+    valor = true;
+    while(valor){
+        valor = crearVilla(village, &villageNameComplete, tree);
+    }      
+    
     player.name = name;
-    player.powerLevel = powerLevel;//converit string power leven en int power level
-    player.mainMaster = mainMaster; 
-    player.village = village;
+    player.powerLevel = powerLevel;
+    player.mainMaster = mainMaster;
+    player.village = villageNameComplete;
     return player;
 }
-Guardian menuPersonaje(){
+Guardian menuPersonaje(GuardiansTree* tree){
     bool valor = true;
     string opcion;
     Guardian player;
@@ -313,7 +393,7 @@ Guardian menuPersonaje(){
             break;
         case '2':
             cls();
-            return crearPersonaje();
+            return crearPersonaje(tree);
             valor = false;
             break;
         default:
@@ -327,23 +407,101 @@ Guardian menuPersonaje(){
     return player;
     
 }
+void avanzarCiudad(string* villageActual, GuardiansTree* tree, Guardian* player){
+    string villageChose;
+    string villageChoseComplete;
+    bool valor = true;
+    while(valor){
+        printBorde("       THE GUARDIAN JOURNEY        ");
+        tree->printVillagesVecinas(*villageActual);
+        cout << endl<< "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
+        cout << endl << "Ingrese en nombre de la villa escogida: ";
+        cin >> villageChose;
+        villageChoseComplete = convertVillageString(villageChose); 
+        if(tree->buscarPorName(villageChoseComplete)){
+            valor = false;
+            player->powerLevel += 1;
+            std::cin.ignore();
+            cout<< endl<<"Has caminado hacia un nuevo lugar, ganas un punto"<<endl<<endl;
+            pause("Presione enter para continuar...");
+            cls();
+            *villageActual = villageChoseComplete;
+        }else{
+            std::cin.ignore();
+            pause("La villa ingresada no cumple con los requisitos, intetalo nuevamente..."); 
+            cls();
+        }
+    }
+}
+void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<string>* aprendicesDerrtados){
+
+}
+void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<string>* aprendicesDerrtados,std::vector<string>* maestrosDerrtados){
+    string villageActual = player->village;
+    string opcion;
+    bool valor = true;
+    while(valor){
+        printBorde("       THE GUARDIAN JOURNEY        ");
+        cout << "INFORMACION: "<< endl;
+        cout << "Nombre: "<< player->name << endl;
+        cout << "Puntos: " << player->powerLevel <<endl;
+        cout << "Ahora te encuentras en: " << villageActual <<endl<<endl;
+        cout << "Escoge una opción: "<<endl;
+        cout << "  >> 1 para enfrentarse a un guardian Aprendiz"<<endl;
+        cout << "  >> 2 para enfrentarse a un guardian Maestro"<<endl;
+        cout << "  >> 3 para avanzar a la siguiente ciudad"<<endl;
+        if(villageActual == "Tesla"){
+            cout <<"  >> 4 para enfrentarse a stromhearth"<<endl;
+        }
+        cin >> opcion;
+        if(esEntero(opcion)){
+            //Es entero
+            if(stoi(opcion) == 1){
+                
+            }else if(stoi(opcion) == 2){
+
+            }else if(stoi(opcion) == 3){
+                cls();
+                avanzarCiudad(&villageActual, tree, player);
+            }else if(stoi(opcion) == 4 && villageActual == "Tesla"){
+                //Enfrentarse a stomherat
+                cls();
+            }else{
+                std::cin.ignore();
+                pause("El valor ingresado es incorrecto, intentelo nuevamente...");
+                cls();
+            }
+        }else{
+            std::cin.ignore();
+            pause("El valor ingresado es incorrecto, intentelo nuevamente...");
+            cls();
+        }
+    }
+}   
 
 int main(){
     //PRIMERO LECTURA DE ARCHIVOS
     GuardiansTree tree;
     Guardian Player;
+    vector<string> aprendicesDerrotados;
+    vector<string> maestrosDerrotados;
     tree.loarGuardianFromFile("guardians.txt");
     tree.loadVillagesFromFile("villages.txt");
     
     /*Inicio del juego*/
     cls();
-    cout << "            ╔═══════════════════════════════════╗            "<<endl;
-    cout << "║═══════════║ BIENVENIDO A THE GUARDIAN JOURNEY ║═══════════║"<<endl;
-    cout << "            ╚═══════════════════════════════════╝            "<<endl;
+    printBorde(" BIENVENIDO A THE GUARDIAN JOURNEY ");
     pause("Presiona Enter para continuar...");
     cls();
 
-    Player = menuPersonaje();
+    Player = menuPersonaje(&tree);
+
+    printBorde("          INICIO DE JUEGO          ");
+    pause("Presiona Enter para continuar...");
+    cls();
+
+    menuJuego(&Player, &tree, &aprendicesDerrotados, &maestrosDerrotados);
+    
 
     return 0;
 }
