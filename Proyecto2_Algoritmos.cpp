@@ -346,6 +346,7 @@ bool esEntero(const std::string& str) {
     }
 }
 void printBorde(string str){
+    cls();
     cout << "            |===================================|            "<<endl;
     cout << "|===========|"<< str <<"|===========|"<<endl;
     cout << "            |===================================|            "<<endl<<endl;
@@ -622,16 +623,12 @@ bool enfrentamiento(Guardian* player, GuardiansTree* tree, std::vector<Guardian>
     printBorde(convertStringIn35Size(player->name +" VS " + oponente.name));
     bool resultado = dados(player, oponente);
     if(resultado){
-        cout << "Felicidades, derrotaste a "<< oponente.name<<" Y has ganado 1 punto" <<endl;
+        cout << "Felicidades, derrotaste a "<< oponente.name;
         Derrotados->push_back(oponente);
-        pause("Presione enter para continuar...");
-        cls();
         return true;
 
     }else{
         cout<< "Que lastima, fuiste derrotado por "<< oponente.name<<endl;
-        pause("Presione enter para continuar...");
-        cls();
         return false;
     }
 }
@@ -659,12 +656,28 @@ void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<G
         }
         oponenteGuardian = tree->buscarGuardian(oponente);
         if(enfrentamiento(player,tree,aprendicesDerrtados,oponenteGuardian)){
+            cout<< " Y has ganado 1 punto" <<endl;
+            std::cin.ignore();
+            pause("Presione enter para continuar...");
+            cls();
             player->powerLevel += 1;
             (*cantAprDerrotados)[village] =+ 1;
         }
     }
 }
-void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* aprendicesDerrtados,std::vector<string>* maestrosDerrtados, unordered_map<string, int>* cantAprDerrotados){
+void enfrentamientoMaestro(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* maestrosDerrotados, string oponente){
+    printBorde(convertStringIn35Size("ENFRENTAMIENTO MAESTRO"));
+    Guardian oponenteGuardian;
+    oponenteGuardian = tree->buscarGuardian(oponente);
+    if(enfrentamiento(player,tree,maestrosDerrotados,oponenteGuardian)){
+            cout<< " Y has ganado 2 punto" <<endl;
+            std::cin.ignore();
+            pause("Presione enter para continuar...");
+            cls();
+            player->powerLevel += 2;
+    }
+}
+void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* aprendicesDerrtados,std::vector<Guardian>* maestrosDerrtados, unordered_map<string, int>* cantAprDerrotados){
     string villageActual = player->village;
     string opcion;
     string MaestroVillage = tree->mainMasterVillage(villageActual);
@@ -678,17 +691,18 @@ void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* apr
         cout << "Escoge una opción: "<<endl;
         cout << "  >> 1 para enfrentamiento"<<endl;
         cout << "  >> 2 para avanzar a la siguiente ciudad"<<endl;
-        if(villageActual == "Tesla"){
-            cout <<"  >> 4 para enfrentarse a stromhearth"<<endl;
-        }
+        
         cin >> opcion;
         if(esEntero(opcion)){
             //Es entero
             if(stoi(opcion) == 1){
                 printBorde("       THE GUARDIAN JOURNEY        ");
                 cout <<"Escoge una opción: "<<endl;
-                cout <<"  >> 1 para enfrentase a un aprendiz";
-                cout <<"  >> 2 para enfrentase a un Maestro";
+                cout <<"  >> 1 para enfrentase a un aprendiz"<<endl;
+                cout <<"  >> 2 para enfrentase a un Maestro"<<endl;
+                if(villageActual == "Tesla"){
+                    cout <<"  >> 3 para enfrentarse a stromhearth"<<endl;
+                }
                 cin >> opcion;
                 if(stoi(opcion) == 1){
                     if((*cantAprDerrotados)[villageActual] < 2){
@@ -698,23 +712,34 @@ void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* apr
                         pause("Presione enter para continuar...");
                         cls();
                     }
-                }else if(stoi(opcion) == 1){
-
+                }else if(stoi(opcion) == 2){
+                    if(!buscarStringInVector(*maestrosDerrtados, MaestroVillage)){
+                        enfrentamientoMaestro(player,tree,maestrosDerrtados,MaestroVillage);
+                    }else{
+                        cout << "Ya derrotaste al guardian de esta villa";
+                        pause("Presione enter para continuar...");
+                        cls();
+                    }
+                }else if(stoi(opcion) == 3 && villageActual == "Tesla"){
+                    printBorde(convertStringIn35Size("FELECIDADES, GANASTE"));
+                    pause("Presiona Enter para salir del juego...");
+                    valor = false;
+                    break;
+                    cls();
+                }else{
+                    std::cin.ignore();
+                    pause("El valor ingresado es incorrecto, intentelo nuevamente...");
+                    cls();
                 }
-                
             }else if(stoi(opcion) == 2){
-                cout<< tree->mainMasterVillage(villageActual)<<endl;
-            }else if(stoi(opcion) == 3){
                 cls();
                 avanzarCiudad(&villageActual, tree, player);
-            }else if(stoi(opcion) == 4 && villageActual == "Tesla"){
-                //Enfrentarse a stomherat
-                cls();
             }else{
                 std::cin.ignore();
                 pause("El valor ingresado es incorrecto, intentelo nuevamente...");
                 cls();
             }
+            
         }else{
             std::cin.ignore();
             pause("El valor ingresado es incorrecto, intentelo nuevamente...");
@@ -728,7 +753,7 @@ int main(){
     GuardiansTree tree;
     Guardian Player;
     vector<Guardian> aprendicesDerrotados;
-    vector<string> maestrosDerrotados;
+    vector<Guardian> maestrosDerrotados;
     unordered_map<string,int>cantAprDerrotados;
     tree.loarGuardianFromFile("guardians.txt");
     tree.loadVillagesFromFile("villages.txt");
