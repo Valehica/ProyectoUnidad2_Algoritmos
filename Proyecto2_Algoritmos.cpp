@@ -36,6 +36,9 @@ class GuardiansTree{
             }
             return nullptr;//retornar null si no se encuentra
         }
+        void modificarNameGuardian(const string& buscado, GuardiansTree*& tree, const string& newName){
+            modificarNameRecursion(tree->root, 0,buscado, newName);
+        }
         //Guardar un guardian
         void insertGuardian(const string& name, const string& powerLevel,const string& mainMaster, const string& village){
             Guardian* guardian = new Guardian;
@@ -144,6 +147,9 @@ class GuardiansTree{
             }
             file.close();
         }
+        Guardian* getRoot(){
+            return root;
+        }
         bool buscarPorName(string name){
             for (const auto& pair : MapVillages) {
                 const string& villageName = pair.first;
@@ -193,14 +199,6 @@ class GuardiansTree{
         void addAprendiz(string village, vector<Guardian>* aprendices){
             string mainMaster = mainMasterVillage(village);
             aprendicesPorVilla(root, 0, village,aprendices,mainMaster);
-        }
-        Guardian buscarGuardian(string buscado){
-            Guardian resultado = buscarGuardianRecursion(root, 0, buscado);
-            if(resultado.name == ""){
-                cout << "NO SE ENCONTRO EL RESULTADO"<<endl; 
-            }else{
-                return resultado;
-            }
         }
         void addVillagesAotherMap(unordered_map<string, int>* cantAprendicesGanar){
             for (const auto& pair : MapVillages) {
@@ -290,23 +288,17 @@ class GuardiansTree{
                 }
             }
         }
-        Guardian buscarGuardianRecursion(Guardian* guardian, int indent, string buscado) {
-            Guardian guardianNoEncontrado;  // Valor especial para indicar ausencia de resultado
-            guardianNoEncontrado.name = "";
-            
+        void modificarNameRecursion(Guardian* guardian, int indent, string buscado, string newName) {
             if (guardian != nullptr) {
-                if (guardian->name == buscado) {
-                    guardianNoEncontrado = *guardian;
+                if ((guardian)->name == buscado) {
+                    (guardian)->name = newName;
+                    return;
                 } else {
-                    for (Guardian* aprendiz : guardian->aprendices) {
-                        Guardian resultado = buscarGuardianRecursion(aprendiz, indent + 4, buscado);
-                        if (resultado.name != "") {
-                            return resultado; 
-                        }
+                    for (Guardian* aprendiz : (guardian)->aprendices) {
+                        modificarNameRecursion(aprendiz, indent + 4, buscado, newName);
                     }
                 }
             }
-            return guardianNoEncontrado; 
         }
 };
 /*Funciones basicas*/
@@ -366,14 +358,68 @@ string convertVillageString(string village){
         return resultVillage;
     }
 }
+string convertStringIn35Size(string letter){
+    int extencion = letter.size();
+    extencion = 35 - extencion;
+    int espaciosIz;
+    int espaciosDer;
+    string resultado;
+    if(extencion%2 != 0){
+        //impar
+        espaciosIz = trunc(extencion/2); 
+        espaciosDer = espaciosIz + 1;
+    }else{
+        //par
+        espaciosIz = trunc(extencion/2); 
+        espaciosDer = espaciosIz; 
+    }
+    for(int i = 0; i<espaciosIz; i++){
+        if(i== 0){
+            resultado = " ";
+        }else{
+            resultado = resultado + " ";
+        }
+    }
+    resultado = resultado + letter;
+    for(int i = 0; i<espaciosDer; i++){        
+        resultado = resultado + " ";
+    }
+    return resultado;
+
+}
 /*FUNCIONES DE JUEGO*/
-Guardian elegirPersonaje(){
+Guardian elegirPersonaje(GuardiansTree* tree){
     /*Implementar despues*/
     Guardian player;
+    string guardianName;
+    string nameRemplace = "Thadio"; 
+    bool valor = true;
+    while(valor){
+        printBorde(convertStringIn35Size("ESCOGE TU PERSONAJE"));
+        cout << "A continuacion se mostrara una lista de guerrero" <<endl;
+        cout << "Deberá escoger entre los guerreros presentes para que sea su personaje" <<endl;
+        std::cin.ignore();
+        pause("Presione una Enter para continuar...");
+        cout<<endl << "GUERREROS DISPONIBLES: "<<endl;
+        tree->printGuardians();
+        cout << endl << "Ingrese en nombre del maestro ecogido: ";
+        cin >> guardianName;
+        Guardian* playerPosible = tree->findGuardian(capitalizeFirstLetter(guardianName));
+        if(playerPosible != nullptr){
+            player = *playerPosible;
+            player.powerLevel = 50;
+            valor = false;
+            tree->modificarNameGuardian(capitalizeFirstLetter(guardianName), tree, nameRemplace);
+        }else{
+            std::cin.ignore();
+            pause("El Guerrero ingresado no cumple con los requisitos, intetalo nuevamente...");
+            cls();
+        }
+    }
     return player;
 }
 bool crearNombre(string* name){
-    printBorde("       CREACION DE PERSONAJE       ");
+    printBorde(convertStringIn35Size("CREACION DE PERSONAJE"));
     std::cout <<"Ingrese un nommbre: ";
     cin >> *name;
     if(!name->empty()){
@@ -390,7 +436,7 @@ bool crearMaestro(Guardian* mainMasterGuardian, string* mainMaster, int powerLev
     cout << "Debe tener en cuanta que un maestro debe tener mayor nivel que usted" <<endl;
     cout << "Nivel actual de su personaje: 50" <<endl;
     std::cin.ignore();
-    pause("Presione una tecla para continuar...");
+    pause("Presione una Enter para continuar...");
     
     cout<<endl << "MAESTROS DISPONIBLES: "<<endl;
     tree->printGuardians();
@@ -478,7 +524,7 @@ Guardian menuPersonaje(GuardiansTree* tree){
         {
         case '1':
             cls();
-            return elegirPersonaje();
+            return elegirPersonaje(tree);
             valor = false;
             break;
         case '2':
@@ -553,35 +599,7 @@ bool buscarStringInVector(vector<Guardian> aprendices, string aprendiz){
     }
     return false;
 }
-string convertStringIn35Size(string letter){
-    int extencion = letter.size();
-    extencion = 35 - extencion;
-    int espaciosIz;
-    int espaciosDer;
-    string resultado;
-    if(extencion%2 == 0){
-        //par
-        espaciosIz = trunc(extencion/2); 
-        espaciosDer = espaciosIz + 1;
-    }else{
-        //impar
-        espaciosIz = trunc(extencion/2); 
-        espaciosDer = espaciosIz; 
-    }
-    for(int i = 0; i<espaciosIz; i++){
-        if(i== 0){
-            resultado = " ";
-        }else{
-            resultado = resultado + " ";
-        }
-    }
-    resultado = resultado + letter;
-    for(int i = 0; i<espaciosDer; i++){        
-        resultado = resultado + " ";
-    }
-    return resultado;
 
-}
 bool dados(Guardian* player, Guardian oponente){
     srand(time(nullptr));
     int random;
@@ -634,7 +652,7 @@ bool enfrentamiento(Guardian* player, GuardiansTree* tree, std::vector<Guardian>
 }
 void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* aprendicesDerrtados, string village, unordered_map<string, int>* cantAprDerrotados){
     string oponente;
-    Guardian oponenteGuardian;
+    Guardian* oponenteGuardian;
     bool valor = true;
     while(valor){
         printBorde("      ENFRENTAMIENTO APRENDIZ      ");
@@ -654,8 +672,8 @@ void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<G
             std::cin.ignore();
             pause("El valor ingresado es incorrecto, intentelo nuevamente...");
         }
-        oponenteGuardian = tree->buscarGuardian(oponente);
-        if(enfrentamiento(player,tree,aprendicesDerrtados,oponenteGuardian)){
+        oponenteGuardian = tree->findGuardian(oponente);
+        if(enfrentamiento(player,tree,aprendicesDerrtados,*oponenteGuardian)){
             cout<< " Y has ganado 1 punto" <<endl;
             std::cin.ignore();
             pause("Presione enter para continuar...");
@@ -667,9 +685,9 @@ void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<G
 }
 void enfrentamientoMaestro(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* maestrosDerrotados, string oponente){
     printBorde(convertStringIn35Size("ENFRENTAMIENTO MAESTRO"));
-    Guardian oponenteGuardian;
-    oponenteGuardian = tree->buscarGuardian(oponente);
-    if(enfrentamiento(player,tree,maestrosDerrotados,oponenteGuardian)){
+    Guardian* oponenteGuardian;
+    oponenteGuardian = tree->findGuardian(oponente);
+    if(enfrentamiento(player,tree,maestrosDerrotados,*oponenteGuardian)){
             cout<< " Y has ganado 2 punto" <<endl;
             std::cin.ignore();
             pause("Presione enter para continuar...");
@@ -677,10 +695,48 @@ void enfrentamientoMaestro(Guardian* player, GuardiansTree* tree, std::vector<Gu
             player->powerLevel += 2;
     }
 }
-void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* aprendicesDerrtados,std::vector<Guardian>* maestrosDerrtados, unordered_map<string, int>* cantAprDerrotados){
-    string villageActual = player->village;
+void menuEnfrentamientos(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* GuerreroDerrotados, unordered_map<string, int>* cantAprDerrotados, string villageActual, bool*valor){
     string opcion;
     string MaestroVillage = tree->mainMasterVillage(villageActual);
+    printBorde("       THE GUARDIAN JOURNEY        ");
+    cout <<"Escoge una opción: "<<endl;
+    cout <<"  >> 1 para enfrentase a un aprendiz"<<endl;
+    cout <<"  >> 2 para enfrentase a un Maestro"<<endl;
+    if(villageActual == "Tesla"){
+        cout <<"  >> 3 para enfrentarse a stromhearth"<<endl;
+    }
+    cin >> opcion;
+    if(stoi(opcion) == 1){
+        if((*cantAprDerrotados)[villageActual] < 2){
+            enfrentamientoAprendiz(player,tree,GuerreroDerrotados,villageActual,cantAprDerrotados);    
+        }else{
+            cout << "Ya no puedes derrotar mas aprendices en esta ciudad";
+            pause("Presione enter para continuar...");
+            cls();
+        }
+    }else if(stoi(opcion) == 2){
+        if(!buscarStringInVector(*GuerreroDerrotados, MaestroVillage)){
+            enfrentamientoMaestro(player,tree,GuerreroDerrotados,MaestroVillage);
+        }else{
+            cout << "Ya derrotaste al guardian de esta villa";
+            pause("Presione enter para continuar...");
+            cls();
+        }
+    }else if(stoi(opcion) == 3 && villageActual == "Tesla"){
+        printBorde(convertStringIn35Size("FELECIDADES, GANASTE"));
+        pause("Presiona Enter para salir del juego...");
+        *valor = false;
+        cls();
+    }else{
+        std::cin.ignore();
+        pause("El valor ingresado es incorrecto, intentelo nuevamente...");
+        cls();
+    }
+}
+void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* GuerreroDerrotados, unordered_map<string, int>* cantAprDerrotados){
+    string villageActual = player->village;
+    string opcion;
+    vector<string> historialCiudades;
     bool valor = true;
     while(valor){
         printBorde("       THE GUARDIAN JOURNEY        ");
@@ -696,41 +752,7 @@ void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* apr
         if(esEntero(opcion)){
             //Es entero
             if(stoi(opcion) == 1){
-                printBorde("       THE GUARDIAN JOURNEY        ");
-                cout <<"Escoge una opción: "<<endl;
-                cout <<"  >> 1 para enfrentase a un aprendiz"<<endl;
-                cout <<"  >> 2 para enfrentase a un Maestro"<<endl;
-                if(villageActual == "Tesla"){
-                    cout <<"  >> 3 para enfrentarse a stromhearth"<<endl;
-                }
-                cin >> opcion;
-                if(stoi(opcion) == 1){
-                    if((*cantAprDerrotados)[villageActual] < 2){
-                        enfrentamientoAprendiz(player,tree,aprendicesDerrtados,villageActual,cantAprDerrotados);    
-                    }else{
-                        cout << "Ya no puedes derrotar mas aprendices en esta ciudad";
-                        pause("Presione enter para continuar...");
-                        cls();
-                    }
-                }else if(stoi(opcion) == 2){
-                    if(!buscarStringInVector(*maestrosDerrtados, MaestroVillage)){
-                        enfrentamientoMaestro(player,tree,maestrosDerrtados,MaestroVillage);
-                    }else{
-                        cout << "Ya derrotaste al guardian de esta villa";
-                        pause("Presione enter para continuar...");
-                        cls();
-                    }
-                }else if(stoi(opcion) == 3 && villageActual == "Tesla"){
-                    printBorde(convertStringIn35Size("FELECIDADES, GANASTE"));
-                    pause("Presiona Enter para salir del juego...");
-                    valor = false;
-                    break;
-                    cls();
-                }else{
-                    std::cin.ignore();
-                    pause("El valor ingresado es incorrecto, intentelo nuevamente...");
-                    cls();
-                }
+                menuEnfrentamientos(player, tree, GuerreroDerrotados, cantAprDerrotados, villageActual, &valor);
             }else if(stoi(opcion) == 2){
                 cls();
                 avanzarCiudad(&villageActual, tree, player);
@@ -746,15 +768,14 @@ void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* apr
             cls();
         }
     }
-}   
-
+} 
 int main(){
     //PRIMERO LECTURA DE ARCHIVOS
     GuardiansTree tree;
     Guardian Player;
-    vector<Guardian> aprendicesDerrotados;
-    vector<Guardian> maestrosDerrotados;
+    vector<Guardian> GuerreroDerrotados;
     unordered_map<string,int>cantAprDerrotados;
+
     tree.loarGuardianFromFile("guardians.txt");
     tree.loadVillagesFromFile("villages.txt");
     tree.addVillagesAotherMap(&cantAprDerrotados);
@@ -770,7 +791,7 @@ int main(){
     pause("Presiona Enter para continuar...");
     cls();
 
-    menuJuego(&Player, &tree, &aprendicesDerrotados, &maestrosDerrotados, &cantAprDerrotados);
+    menuJuego(&Player, &tree, &GuerreroDerrotados, &cantAprDerrotados);
     
 
     return 0;
