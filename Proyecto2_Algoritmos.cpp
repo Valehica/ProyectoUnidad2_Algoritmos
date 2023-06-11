@@ -3,18 +3,22 @@
 #include <sstream>
 #include <string>
 #include <cstring>
+#include <iomanip>
 #include <cstdlib>
+#include <ctime>
+#include <cmath>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace std;
-
 struct Guardian{
     //Estructura para guardianes {nombre, nivel de experiencia, maestro, aldea, aprendices}
     std::string name; 
     int powerLevel;
     std::string mainMaster;
     std::string village; 
+    int lvlAprendiz;
     std::vector<Guardian*> aprendices;
 };
 
@@ -44,11 +48,13 @@ class GuardiansTree{
             //comprueba si el arbol esta vacio
             if(root == nullptr){
                 //convierte al primer guardian en el lider
+                guardian->lvlAprendiz = 0;
                 root = guardian;
             }else{
                 //busca el guardian maestro y cpnvierte al nuevo guardian en su aprendiz
                 Guardian* master = findGuardian(mainMaster);
                 if(master != nullptr){
+                    guardian->lvlAprendiz = master->lvlAprendiz+1;
                     master->aprendices.push_back(guardian);
                 }
             }
@@ -167,6 +173,41 @@ class GuardiansTree{
             }
             return nullptr;
         }
+        string mainMasterVillage(string village){
+            vector<Guardian> guardianesSaved;
+            Guardian guardianMasAlto;
+            
+            guardianesPorVilla(root,0,village, &guardianesSaved);
+
+            for (size_t i = 0; i < guardianesSaved.size(); i++) {
+                if(i == 0){
+                    guardianMasAlto = (guardianesSaved)[i];
+                }else{
+                    if(guardianMasAlto.lvlAprendiz>((guardianesSaved)[i]).lvlAprendiz){
+                        guardianMasAlto = (guardianesSaved)[i];
+                    }
+                }
+            }
+            return guardianMasAlto.name;
+        }
+        void addAprendiz(string village, vector<Guardian>* aprendices){
+            string mainMaster = mainMasterVillage(village);
+            aprendicesPorVilla(root, 0, village,aprendices,mainMaster);
+        }
+        Guardian buscarGuardian(string buscado){
+            Guardian resultado = buscarGuardianRecursion(root, 0, buscado);
+            if(resultado.name == ""){
+                cout << "NO SE ENCONTRO EL RESULTADO"<<endl; 
+            }else{
+                return resultado;
+            }
+        }
+        void addVillagesAotherMap(unordered_map<string, int>* cantAprendicesGanar){
+            for (const auto& pair : MapVillages) {
+                (*cantAprendicesGanar)[pair.first] = 0;
+            }
+        }
+        
         /*FUNCIONES DE IMPRIMIR*/
         void printMap(){
             for (const auto& pair : MapVillages) {
@@ -203,6 +244,15 @@ class GuardiansTree{
         void printGuardians() {
             printGuardian(root, 0);
         }
+        void printMaestrosPorVilla(string village){
+            string master = mainMasterVillage(village);
+        }
+        void printAprendices(vector<Guardian> aprendices){
+            cout << "APRENDICES DISPONIBLES: "<< endl;    
+            for (size_t i = 0; i < aprendices.size(); i++) {
+                cout << "  >> " <<(aprendices[i]).name << "[Village:" << aprendices[i].village <<"; Power Level: "<< aprendices[i].powerLevel <<"]"<< endl;
+            }
+        }
         
     private:
         vector<Guardian*> guardians;
@@ -212,13 +262,52 @@ class GuardiansTree{
 
         //Funcion para imprimir private
         void printGuardian(Guardian* guardian, int indent) {
-        if (guardian != nullptr) {
-            std::cout << std::string(indent, ' ') << ">> " << guardian->name << " (Power Level: " << guardian->powerLevel << ", Village: " << guardian->village << ")" << std::endl;
-            for (Guardian* aprendiz : guardian->aprendices) {
-                printGuardian(aprendiz, indent + 4);
+            if (guardian != nullptr) {
+                std::cout << std::string(indent, ' ') << ">> " << guardian->name << " (Power Level: " << guardian->powerLevel << ", Village: " << guardian->village << ")" << std::endl;
+                for (Guardian* aprendiz : guardian->aprendices) {
+                    printGuardian(aprendiz, indent + 4);
+                }
             }
         }
-    }
+        void guardianesPorVilla(Guardian* guardian, int indent, string village,vector<Guardian>* guardianesSaved){
+            if (guardian != nullptr) {
+                if(guardian->village == village){
+                    guardianesSaved->push_back(*guardian);
+                }
+                for (Guardian* aprendiz : guardian->aprendices) {
+                    guardianesPorVilla(aprendiz, indent + 4, village, guardianesSaved);
+                }
+            }
+        }
+        void aprendicesPorVilla(Guardian* guardian, int indent, string village,vector<Guardian>*& guardianesSaved, string mainMaster){
+            if (guardian != nullptr) {
+                if(guardian->village == village && mainMaster != guardian->name){
+                    //cout<< "NAME GUARDIAN: "<< guardian->name << "  VS  "<< "NAME MASTER: "<< mainMaster<<endl;
+                    guardianesSaved->push_back(*guardian);
+                }
+                for (Guardian* aprendiz : guardian->aprendices) {
+                    aprendicesPorVilla(aprendiz, indent + 4, village, guardianesSaved, mainMaster);
+                }
+            }
+        }
+        Guardian buscarGuardianRecursion(Guardian* guardian, int indent, string buscado) {
+            Guardian guardianNoEncontrado;  // Valor especial para indicar ausencia de resultado
+            guardianNoEncontrado.name = "";
+            
+            if (guardian != nullptr) {
+                if (guardian->name == buscado) {
+                    guardianNoEncontrado = *guardian;
+                } else {
+                    for (Guardian* aprendiz : guardian->aprendices) {
+                        Guardian resultado = buscarGuardianRecursion(aprendiz, indent + 4, buscado);
+                        if (resultado.name != "") {
+                            return resultado; 
+                        }
+                    }
+                }
+            }
+            return guardianNoEncontrado; 
+        }
 };
 /*Funciones basicas*/
 void pause(string text){
@@ -433,12 +522,152 @@ void avanzarCiudad(string* villageActual, GuardiansTree* tree, Guardian* player)
         }
     }
 }
-void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<string>* aprendicesDerrtados){
+void eliminarDerrotados(std::vector<Guardian>* guardianes, std::vector<Guardian>* derrotados) {
+    if(derrotados != nullptr){
+        guardianes->erase(std::remove_if(guardianes->begin(), guardianes->end(), [&](const Guardian& guardian) {
+            return std::find_if(derrotados->begin(), derrotados->end(), [&](const Guardian& derrotado) {
+                return derrotado.name == guardian.name;
+            }) != derrotados->end();
+        }), guardianes->end());
+    }
+}
+string lvlMenor(vector<Guardian>* aprendices){
+    Guardian levelMenor;
+    for (size_t i = 0; i < aprendices->size(); i++) {
+      if(i == 0){
+        levelMenor = (*aprendices)[i];
+      }else{
+        if(levelMenor.powerLevel > (*aprendices)[i].powerLevel){
+            levelMenor = (*aprendices)[i];
+        }
+      }
+    }
+    return levelMenor.name;
+}
+bool buscarStringInVector(vector<Guardian> aprendices, string aprendiz){
+    for (size_t i = 0; i < aprendices.size(); i++) {
+        if(aprendices[i].name == aprendiz){
+            return true;
+        }
+    }
+    return false;
+}
+string convertStringIn35Size(string letter){
+    int extencion = letter.size();
+    extencion = 35 - extencion;
+    int espaciosIz;
+    int espaciosDer;
+    string resultado;
+    if(extencion%2 == 0){
+        //par
+        espaciosIz = trunc(extencion/2); 
+        espaciosDer = espaciosIz + 1;
+    }else{
+        //impar
+        espaciosIz = trunc(extencion/2); 
+        espaciosDer = espaciosIz; 
+    }
+    for(int i = 0; i<espaciosIz; i++){
+        if(i== 0){
+            resultado = " ";
+        }else{
+            resultado = resultado + " ";
+        }
+    }
+    resultado = resultado + letter;
+    for(int i = 0; i<espaciosDer; i++){        
+        resultado = resultado + " ";
+    }
+    return resultado;
 
 }
-void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<string>* aprendicesDerrtados,std::vector<string>* maestrosDerrtados){
+bool dados(Guardian* player, Guardian oponente){
+    srand(time(nullptr));
+    int random;
+    int levelPlayer = trunc(player->powerLevel/10);
+    int levelOponente = trunc(oponente.powerLevel/10);
+    int carasDados;
+    int ganancia;
+    float porcentaje;
+    if(levelOponente > levelPlayer){
+        carasDados = levelOponente - levelPlayer + 2;
+        porcentaje = (100 * (1.0 / carasDados));
+        random = rand()%carasDados;
+    }else if(levelOponente == levelPlayer){
+        carasDados = 2;
+        porcentaje = 50;
+        random = rand()%carasDados;
+    }else{
+        carasDados = levelOponente - levelPlayer + 2;
+        random = rand()%carasDados;
+        ganancia = carasDados - 1 - trunc(carasDados/3);
+        porcentaje = (100 * (ganancia / static_cast<float>(carasDados)));
+        for(int i = 0; i < ganancia; i++){
+            if(i == random){
+                return true;
+            }
+        }
+    }
+    cout<<"Tienes una probabilidad de %"<< fixed << setprecision(0) << porcentaje << " de ganar"<< endl;
+    std::cin.ignore();
+    pause("Presiona enter para lanzar el dado...");
+    
+    if(random == 1){
+        return true;
+    }else{
+        return false;
+    }
+}
+bool enfrentamiento(Guardian* player, GuardiansTree* tree, std::vector<Guardian>*& Derrotados, Guardian oponente){
+    printBorde(convertStringIn35Size(player->name +" VS " + oponente.name));
+    bool resultado = dados(player, oponente);
+    if(resultado){
+        cout << "Felicidades, derrotaste a "<< oponente.name<<" Y has ganado 1 punto" <<endl;
+        Derrotados->push_back(oponente);
+        pause("Presione enter para continuar...");
+        cls();
+        return true;
+
+    }else{
+        cout<< "Que lastima, fuiste derrotado por "<< oponente.name<<endl;
+        pause("Presione enter para continuar...");
+        cls();
+        return false;
+    }
+}
+void enfrentamientoAprendiz(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* aprendicesDerrtados, string village, unordered_map<string, int>* cantAprDerrotados){
+    string oponente;
+    Guardian oponenteGuardian;
+    bool valor = true;
+    while(valor){
+        printBorde("      ENFRENTAMIENTO APRENDIZ      ");
+        vector<Guardian> aprendices;
+        tree->addAprendiz(village,&aprendices);
+        eliminarDerrotados(&aprendices,aprendicesDerrtados);
+        tree->printAprendices(aprendices);
+        
+        cout <<endl << "(Le sugerimos que pelee contra " << lvlMenor(&aprendices) << " ya que presenta un menor nivel)" << endl;
+        cout << "Ingrese el nombre del aprendiz que desee enfrensarse: ";
+        cin >> oponente;
+        oponente = capitalizeFirstLetter(oponente);
+        //comprobar si pertence 
+        if(buscarStringInVector(aprendices, oponente)){
+            valor = false;
+        }else{
+            std::cin.ignore();
+            pause("El valor ingresado es incorrecto, intentelo nuevamente...");
+        }
+        oponenteGuardian = tree->buscarGuardian(oponente);
+        if(enfrentamiento(player,tree,aprendicesDerrtados,oponenteGuardian)){
+            player->powerLevel += 1;
+            (*cantAprDerrotados)[village] =+ 1;
+        }
+    }
+}
+void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<Guardian>* aprendicesDerrtados,std::vector<string>* maestrosDerrtados, unordered_map<string, int>* cantAprDerrotados){
     string villageActual = player->village;
     string opcion;
+    string MaestroVillage = tree->mainMasterVillage(villageActual);
     bool valor = true;
     while(valor){
         printBorde("       THE GUARDIAN JOURNEY        ");
@@ -447,9 +676,8 @@ void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<string>* apren
         cout << "Puntos: " << player->powerLevel <<endl;
         cout << "Ahora te encuentras en: " << villageActual <<endl<<endl;
         cout << "Escoge una opción: "<<endl;
-        cout << "  >> 1 para enfrentarse a un guardian Aprendiz"<<endl;
-        cout << "  >> 2 para enfrentarse a un guardian Maestro"<<endl;
-        cout << "  >> 3 para avanzar a la siguiente ciudad"<<endl;
+        cout << "  >> 1 para enfrentamiento"<<endl;
+        cout << "  >> 2 para avanzar a la siguiente ciudad"<<endl;
         if(villageActual == "Tesla"){
             cout <<"  >> 4 para enfrentarse a stromhearth"<<endl;
         }
@@ -457,9 +685,25 @@ void menuJuego(Guardian* player, GuardiansTree* tree, std::vector<string>* apren
         if(esEntero(opcion)){
             //Es entero
             if(stoi(opcion) == 1){
+                printBorde("       THE GUARDIAN JOURNEY        ");
+                cout <<"Escoge una opción: "<<endl;
+                cout <<"  >> 1 para enfrentase a un aprendiz";
+                cout <<"  >> 2 para enfrentase a un Maestro";
+                cin >> opcion;
+                if(stoi(opcion) == 1){
+                    if((*cantAprDerrotados)[villageActual] < 2){
+                        enfrentamientoAprendiz(player,tree,aprendicesDerrtados,villageActual,cantAprDerrotados);    
+                    }else{
+                        cout << "Ya no puedes derrotar mas aprendices en esta ciudad";
+                        pause("Presione enter para continuar...");
+                        cls();
+                    }
+                }else if(stoi(opcion) == 1){
+
+                }
                 
             }else if(stoi(opcion) == 2){
-
+                cout<< tree->mainMasterVillage(villageActual)<<endl;
             }else if(stoi(opcion) == 3){
                 cls();
                 avanzarCiudad(&villageActual, tree, player);
@@ -483,11 +727,12 @@ int main(){
     //PRIMERO LECTURA DE ARCHIVOS
     GuardiansTree tree;
     Guardian Player;
-    vector<string> aprendicesDerrotados;
+    vector<Guardian> aprendicesDerrotados;
     vector<string> maestrosDerrotados;
+    unordered_map<string,int>cantAprDerrotados;
     tree.loarGuardianFromFile("guardians.txt");
     tree.loadVillagesFromFile("villages.txt");
-    
+    tree.addVillagesAotherMap(&cantAprDerrotados);
     /*Inicio del juego*/
     cls();
     printBorde(" BIENVENIDO A THE GUARDIAN JOURNEY ");
@@ -500,7 +745,7 @@ int main(){
     pause("Presiona Enter para continuar...");
     cls();
 
-    menuJuego(&Player, &tree, &aprendicesDerrotados, &maestrosDerrotados);
+    menuJuego(&Player, &tree, &aprendicesDerrotados, &maestrosDerrotados, &cantAprDerrotados);
     
 
     return 0;
