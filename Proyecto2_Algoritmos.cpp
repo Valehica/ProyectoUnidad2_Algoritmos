@@ -80,39 +80,6 @@ class GuardiansTree{
             }
             return valor;
         }   
-        /*COMPROBAR SI EXISTE UNA VILLA Y UN APRENDIZ POR ALDEA*/
-        void addAprendiz(string maestro){
-            Guardian* mainMaster = findGuardian(maestro);
-            if (mainMaster == nullptr) {
-                // No se encontró el maestro, manejar el error
-                return;
-            }
-            int levelTope = mainMaster->powerLevel;
-            srand(time(nullptr));
-            int randomIndice;
-            int randomLevel = (rand()%(levelTope-50)) +50;
-            vector<string> posiblesNombres= {"Salvador","Ireneo", "Mureo", "Marcial", "Florentino", "Salomon", "Eliana", "Abdon", "Bartolome"};
-            randomIndice = rand()%posiblesNombres.size();
-            insertGuardian(posiblesNombres[randomIndice], std::to_string(randomLevel), maestro, mainMaster->village);
-            
-        }
-        void comprobarMaestroAprendices(){
-            string guardianNull = " ";
-            vector<Guardian>* aprendicesPtr = nullptr;
-            vector<string>VilagesPasadas;
-            for (const auto& pair : MapVillages) {
-                vector<Guardian> aprendices;
-                aprendicesPtr = &aprendices;
-                const string& villageName = pair.first;
-                aprendicesPorVilla(root, 0, villageName, aprendicesPtr,guardianNull);
-                if(aprendices.size() < 2){
-                    //Se debe crear un nuevo aprendiz
-                    string mainMaster = mainMasterVillage(villageName);
-                    addAprendiz(mainMaster);
-                }
-            }
-            
-        }
         
         //cargar el archivo guardianes
         void loarGuardianFromFile(const string& filename){
@@ -180,10 +147,51 @@ class GuardiansTree{
             }
             file.close();
         }
+        /*COMPROBAR SI EXISTE UNA VILLA Y UN APRENDIZ POR ALDEA*/
+        void addAprendiz(string maestro){
+            Guardian* mainMaster = findGuardian(maestro);
+            if (mainMaster == nullptr) {
+                // No se encontró el maestro, manejar el error
+                return;
+            }
+            int levelTope = mainMaster->powerLevel;
+            srand(time(nullptr));
+            int randomIndice;
+            int randomLevel = (rand()%(levelTope-50)) +50;
+            vector<string> posiblesNombres= {"Salvador","Ireneo", "Mureo", "Marcial", "Florentino", "Salomon", "Eliana", "Abdon", "Bartolome"};
+            randomIndice = rand()%posiblesNombres.size();
+            insertGuardian(posiblesNombres[randomIndice], std::to_string(randomLevel), maestro, mainMaster->village);  
+        }
+        void comprobarMaestroAprendices(){
+            string guardianNull = " ";
+            vector<Guardian>* aprendicesPtr = nullptr;
+            vector<string>VilagesPasadas;
+            for (const auto& pair : MapVillages) {
+                vector<Guardian> aprendices;
+                aprendicesPtr = &aprendices;
+                const string& villageName = pair.first;
+                aprendicesPorVilla(root, 0, villageName, aprendicesPtr,guardianNull);
+                if(aprendices.size() < 2){
+                    //Se debe crear un nuevo aprendiz
+                    string mainMaster = mainMasterVillage(villageName);
+                    addAprendiz(mainMaster);
+                }
+            }
+            
+        }
+        /*FUNCIONES DE BUSQUEDA*/
         bool buscarPorName(string name){
             for (const auto& pair : MapVillages) {
                 const string& villageName = pair.first;
                 if(villageName == name){
+                    return true;
+                }
+            }
+            return false;
+        }
+        bool buscarPorNameVector(string name, vector<string> vecinas){
+            for (size_t i = 0; i < vecinas.size(); i++) {
+                if(vecinas[i] == name){
                     return true;
                 }
             }
@@ -226,6 +234,7 @@ class GuardiansTree{
             }
             return guardianMasAlto.name;
         }
+        /*FUNCIONES PARA AGREGAR ELEMENTOS A OTRA ESTRUCTURA*/
         void addAprendiz(string village, vector<Guardian>* aprendices){
             string mainMaster = mainMasterVillage(village);
             aprendicesPorVilla(root, 0, village,aprendices,mainMaster);
@@ -235,6 +244,16 @@ class GuardiansTree{
                 (*cantAprendicesGanar)[pair.first] = 0;
             }
         }
+        vector<string> addVillagesVecinas(string village){
+            vector<string> vecinas;
+            int indice = buscarIndice(village);
+            for(int k = 0; k < MapVillages.size(); k++){
+                if(matrizVillage[indice][k] == 1){
+                    vecinas.push_back(buscarPorIndice(k));
+                }
+            }
+            return vecinas; 
+        }
         vector<string> createMap(){
             vector<string> map;
             for (const auto& pair : MapVillages) {
@@ -242,11 +261,21 @@ class GuardiansTree{
             }
             return map;
         }
+
         
         /*FUNCIONES DE IMPRIMIR*/
-        void printMap(){
+        void printMap(vector<string> esepcion){
+            bool valor = true;
             for (const auto& pair : MapVillages) {
-                cout << pair.first << endl;
+                valor = true;
+                for (size_t i = 0; i < esepcion.size(); i++) {
+                    if(esepcion[i] == pair.first){
+                        valor = false;
+                    }
+                }
+                if(valor){
+                    cout << pair.first << endl;
+                } 
             }
         }
         void printVillage(int i){
@@ -259,16 +288,7 @@ class GuardiansTree{
                     }
                 }
         }
-        void printVillagesVecinas(string village){
-            int indice = buscarIndice(village);
-            cout<<"Desde " << village <<" puedes ir a:"<< endl;
-                for(int k= 0; k < MapVillages.size(); k++){
-                    if(matrizVillage[indice][k] == 1){
-                        cout << "    >> " << buscarPorIndice(k)<<endl;
-                    }
-                }
-        }
-
+        
         void printAllVillages(){
             string villageNameAux;
             for(int i= 0; i < MapVillages.size(); i++){
@@ -497,7 +517,8 @@ bool crearVilla(string village, string* villageNameComplete, GuardiansTree* tree
     pause("Presione una tecla para continuar...");
     
     cout<<endl << "VILLAS DISPONIBLES: "<<endl;
-    tree->printMap();
+    vector<string> vacio = {" "};//Para compensar la funcion creada y evitar crear mas funciones
+    tree->printMap(vacio);
     cout << endl<< "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
     cout << endl << "Ingrese en nombre de la villa escogida: ";
     cin >> village;
@@ -511,7 +532,6 @@ bool crearVilla(string village, string* villageNameComplete, GuardiansTree* tree
         cls();
     }
     return true;
-    cls();
 }
 Guardian crearPersonaje(GuardiansTree* tree){
     Guardian player;
@@ -539,6 +559,7 @@ Guardian crearPersonaje(GuardiansTree* tree){
     return player;
 }
 Guardian menuPersonaje(GuardiansTree* tree){
+    printBorde(convertStringIn35Size("PERSONAJE"));
     bool valor = true;
     string opcion;
     Guardian player;
@@ -570,31 +591,71 @@ Guardian menuPersonaje(GuardiansTree* tree){
     return player;
     
 }
+void printVecinas(vector<string>vecinas, string village){
+    cout<<"Desde " << village <<" puedes ir a:"<< endl;
+    for (size_t i = 0; i < vecinas.size(); i++){
+        cout << "  >> " << vecinas[i]<< endl;
+      
+    }
+}
+void alchimist(string villageActual, vector<string> vecinas, GuardiansTree* tree, Guardian* player){
+    srand(time(nullptr));
+    int random;
+    string villageChose;
+    vecinas.push_back(villageActual);
+    
+    printBorde(convertStringIn35Size("PODER DE ALQUIMISTA"));
+    cout << endl<<"ALDEAS DISPONIBLES: "<<endl <<endl;
+    tree->printMap(vecinas);
+    cout << endl << "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
+    cout << endl << "Ingrese en nombre de la villa escogida (Recuerde que perdera entre 2 a 4 puntos): ";
+    cin >> villageChose;
+    villageChose = convertVillageString(villageChose); 
+
+    //comprobar si no esta en las villas vecinas y alcuarl
+    if(!tree->buscarPorNameVector(villageChose, vecinas)){
+        random = (rand()%3)+1;
+        player->powerLevel -= random;
+        printBorde(convertStringIn35Size("CONECCION CREADA"));
+        cout << endl << "Ahora " << villageActual << " Y " << villageChose << " Se encuentran CONECTADAS"<< endl;
+        cout << endl<< "Usted a perdido "<< random << " puntos";
+        cout << endl << "Puntos actuales: "<< player->powerLevel<<endl<<endl;
+        std::cin.ignore();
+        pause("Presione Enter para continuar...");
+        tree->coneccionVillages(villageActual, villageChose);
+    }
+}
 void avanzarCiudad(string* villageActual, GuardiansTree* tree, Guardian* player, vector<string>* historialCompleto, vector<string>* historialVillage){
     string villageChose;
-    string villageChoseComplete;
+    vector<string> vecinas;
     bool valor = true;
     while(valor){
-        printBorde("       THE GUARDIAN JOURNEY        ");
-        tree->printVillagesVecinas(*villageActual);
-        cout << endl<< "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
-        cout << endl << "Ingrese en nombre de la villa escogida: ";
+        printBorde(convertStringIn35Size("AVANZAR A OTRA VILLA"));
+        vecinas = tree->addVillagesVecinas(*villageActual);
+        printVecinas(vecinas, *villageActual);
+        cout << endl << "(Solo ingrese la primera palabra, es decir si desea escoger River Village solo escriba River)";
+        cout << endl << "(Si elije usar su poder usted perdera entre 2 a 4 puntos)";
+        cout << endl << "Ingrese en nombre de la villa escogida o ingrese 1 para usar su poder se alquimista: ";
         cin >> villageChose;
-        villageChoseComplete = convertVillageString(villageChose); 
-        if(tree->buscarPorName(villageChoseComplete)){
-            valor = false;
-            player->powerLevel += 1;
-            std::cin.ignore();
-            historialCompleto->push_back(villageChoseComplete);
-            historialVillage->push_back(villageChoseComplete);
-            cout<< endl<<"Has caminado hacia un nuevo lugar, ganas un punto"<<endl<<endl;
-            pause("Presione enter para continuar...");
-            cls();
-            *villageActual = villageChoseComplete;
+        if(villageChose == "1"){
+            alchimist(*villageActual, vecinas, tree, player);
         }else{
-            std::cin.ignore();
-            pause("La villa ingresada no cumple con los requisitos, intetalo nuevamente..."); 
-            cls();
+            villageChose = convertVillageString(villageChose); 
+            if(tree->buscarPorNameVector(villageChose, vecinas)){
+                valor = false;
+                player->powerLevel += 1;
+                std::cin.ignore();
+                historialCompleto->push_back(villageChose);
+                historialVillage->push_back(villageChose);
+                cout<< endl<<"Has caminado hacia un nuevo lugar, ganas un punto"<<endl<<endl;
+                pause("Presione enter para continuar...");
+                cls();
+                *villageActual = villageChose;
+            }else{
+                std::cin.ignore();
+                pause("La villa ingresada no cumple con los requisitos, intetalo nuevamente..."); 
+                cls();
+            }
         }
     }
 }
@@ -892,7 +953,7 @@ void menuEnfrentamientos(Guardian* player, GuardiansTree* tree, std::vector<Guar
             *valor = false;
         }else{
             printBorde(convertStringIn35Size("QUE LASTIMA"));
-            cout << "Aun no puedes enfrentar a Stromheart"<<endl;
+            cout << "Aun no puedes enfrentar a Stormheart"<<endl;
             cout << "REQUISITOS: "<<endl;
             cout << "  >> Nivel mayor o igual a 90"<<endl;
             cout << "  >> Haber recorrido todas las villas"<<endl;
