@@ -11,7 +11,8 @@ leídas mediante un .txt encontrado en este mismo repositorio.
 Para poder jugar este gran juego deberá abrir el ejecutable “TheGuardianJourney.exe” el cual deberá poder
 abrirse en un sistema operativo windows, si esta opción no es compatible con su dispositivo pruebe creando 
 un nuevo ejecutable mediante el terminal de visual studio code ocupando el comando "g++ .\Proyecto2_Algoritmos.cpp"
-y tendiendo instalado MinGW-w64 en sus sitema.
+y tendiendo instalado MinGW-w64 en sus sitema. Si por algun motivo tiene problemas en la pantalla donde no avanza el
+juego presione Enter, son pequeños bugs que no logre arreglar. 
 
 vinculo del video donde se explica a mas detalle el programa: 
 https://drive.google.com/file/d/1E85CMaDmVqH31jwbt8nZ3atkr1hToq58/view?usp=sharing
